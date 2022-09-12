@@ -14,7 +14,7 @@ if (length(args) == 1){
     config = NULL
     config = rbind(config, data.frame(
       base_folder = '~/Documents/metano/WG3/Task2/project_ML_2022',
-      old_data = '2018_data/combinedData.csv',
+      old_data = '2018_data/combinedData_updated.csv',
       new_data_folder = '2022_data',
       fam_file = 'Analysis/apple/admixture/FruitBreedomics_apple_320K_SNP_thin.fam',
       outdir = 'Analysis/1.combining',
@@ -24,14 +24,23 @@ if (length(args) == 1){
 }
   
 # SETUP -------------------------------------------------------------------
+library("knitr")
 library("ggplot2")
 library("tidyverse")
 library("data.table")
 
 ## READ THE OLD DATASET
 fname = file.path(config$base_folder,config$old_data)
-old_data = fread(fname)  
+old_data = fread(fname) 
 
+## arrange by country name (increasing)
+old_data <- arrange(old_data, country)
+
+## recode countries
+oldcountry <- unique(old_data$country)
+newcountry = c("Belgium", "Belgium", "Germany", "Northern_Ireland", "Ireland", "Denmark", "Finland", "Finland", "Netherlands", "Poland", "Switzerland", "Spain", "UK", "UK")
+old_data$country = newcountry[match(old_data$country, oldcountry)]
+old_data %>% group_by(country, herd) %>% summarise(n()) %>% kable()
 
 ## READ THE NEW DATA
 # 1. Finland
@@ -43,6 +52,9 @@ header = c("Inst","renCode","yrmonwk","calvdate","ndim","lactwk","milk","fat","p
 names(findata) <- header
 
 ### TODO - normalize column names and add missing columns before combining new and old data #####
+names(findata)
+names(old_data)
 
-dir.create(file.path(config$base_folder, config$outdir), showWarnings = FALSE)
+
+# dir.create(file.path(config$base_folder, config$outdir), showWarnings = FALSE)
 
