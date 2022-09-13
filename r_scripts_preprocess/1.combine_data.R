@@ -52,10 +52,13 @@ old_data <- mutate(old_data, status = ifelse(status == "Lactation", "Lactating",
 ## READ THE NEW DATA
 writeLines(" - reading in the new data")
 
+ffs = list.files(file.path(config$base_folder, config$new_data_folder)) # get files in folder
+ffs = sort(ffs[!grepl(pattern = ".zip|.rar", ffs)]) # get file which is not .zip or .rar
+print(paste("The following files have been found", paste(ffs, collapse = ", ")))
+
 # 1. Finland
 writeLines(" - FINLAND")
-ffs = list.files(file.path(config$base_folder, config$new_data_folder)) # get files in folder
-fname = file.path(config$base_folder, config$new_data_folder,ffs[!grepl(pattern = ".zip", ffs)]) # get file which is not .zip
+fname = file.path(config$base_folder, config$new_data_folder, ffs[3]) 
 findata = fread(fname)
 print(paste("The folowing new dataset has been read", fname))
 
@@ -76,6 +79,18 @@ findata <- findata %>%
          Method = "sniffer",
          cow = as.character(cow)) %>% 
   select(-c(Inst, yrmonwk, calvdate, ecm, scc, lactwk))
+
+# 1. Spain
+writeLines(" - SPAIN")
+## features
+fname = file.path(config$base_folder, config$new_data_folder, ffs[1]) 
+spaindata = fread(fname)
+print(paste("The folowing new dataset has been read", fname))
+
+## methane emissions
+fname = file.path(config$base_folder, config$new_data_folder, ffs[2]) 
+spainch4 = fread(fname)
+print(paste("The folowing new dataset has been read", fname))
 
 ## COMBINE THE DATA
 writeLines(" - combining old and new data records")
