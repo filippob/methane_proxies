@@ -17,7 +17,6 @@ if (length(args) == 1){
       base_folder = '~/Documents/metano/WG3/Task2/project_ML_2022',
       old_data = '2018_data/combinedData_updated.csv',
       new_data_folder = '2022_data',
-      fam_file = 'Analysis/apple/admixture/FruitBreedomics_apple_320K_SNP_thin.fam',
       outdir = 'Analysis/1.combining',
       force_overwrite = FALSE
     ))
