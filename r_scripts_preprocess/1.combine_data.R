@@ -58,7 +58,7 @@ print(paste("The following files have been found", paste(ffs, collapse = ", ")))
 
 # 1. Finland
 writeLines(" - FINLAND")
-fname = file.path(config$base_folder, config$new_data_folder, ffs[3]) 
+fname = file.path(config$base_folder, config$new_data_folder, ffs[4]) 
 findata = fread(fname)
 print(paste("The folowing new dataset has been read", fname))
 
@@ -83,12 +83,12 @@ findata <- findata %>%
 # 1. Spain
 writeLines(" - SPAIN")
 ## features
-fname = file.path(config$base_folder, config$new_data_folder, ffs[1]) 
+fname = file.path(config$base_folder, config$new_data_folder, ffs[2]) 
 spaindata = fread(fname)
 print(paste("The folowing new dataset has been read", fname))
 
 ## methane emissions
-fname = file.path(config$base_folder, config$new_data_folder, ffs[2]) 
+fname = file.path(config$base_folder, config$new_data_folder, ffs[3]) 
 spainch4 = fread(fname)
 print(paste("The folowing new dataset has been read", fname))
 
