@@ -37,6 +37,7 @@ cdata = fread(fname)
 print(paste(nrow(cdata),"have been read from the following file:", fname))
 
 ## DATA CLEANING
+writeLines(" - cleaning the data")
 #1. put together Norwegian and Nor Cross (same cross from herds in Northern Ireland)
 #   ' ' (space) replaced by '_' (underscore) in the column "breed" 
 cdata <- mutate(cdata, breed = ifelse(breed == "Norwegian", "Nor Cross", breed))
@@ -44,6 +45,21 @@ cdata$breed = gsub(" ","_",cdata$breed)
 
 #2. put together sniffer and sniffer-guardian
 cdata <- mutate(cdata, Method = ifelse(Method == "sniffer-guardian", "sniffer", Method))
+
+#3. set negative BW values to NA
+cdata <- rename(cdata, BW = Body_weight) %>% mutate(BW = ifelse(BW <= 0, NA, BW))
+
+#4. set DIM = 0 to NA
+cdata <- mutate(cdata, DIM = ifelse(DIM <= 0, NA, DIM))
+
+#5. set milk < 1 to NA
+cdata <- mutate(cdata, milk = ifelse(milk <= 1, NA, milk))
+
+#6. set protein < 0.5 to NA
+cdata <- mutate(cdata, protein = ifelse(protein <= 0.5, NA, protein))
+
+#7. set lactose < 0.5 to NA
+cdata <- mutate(cdata, lactose = ifelse(lactose <= 0.5, NA, lactose))
 
 ## SELECTING COLUMNS
 # columns to 
@@ -54,4 +70,5 @@ cdata <- cdata %>%
 
 ## DATA FILTERING
 filter(cdata, parity == 14)
+
 
