@@ -97,7 +97,7 @@ combined_data <- old_data %>% bind_rows(findata)
 
 ## CREATE OUTPUT FOLDER AND WRITE OUT COMBINED DATA
 writeLines(" - writing out the combined file")
-dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE)
+dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE, showWarnings = FALSE)
 fname = file.path(config$base_folder, config$outdir, "combined_data.csv")
 fwrite(x = combined_data, file = fname, sep = ",", col.names = TRUE)
 print(paste("The combined file has been written out to:", fname))
