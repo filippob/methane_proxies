@@ -17,6 +17,8 @@ if (length(args) == 1){
     base_folder = '~/Documents/metano/WG3/Task2/project_ML_2022',
     input_data = 'Analysis/1.combining/combined_data.csv.gz',
     vars_to_drop = "RecordingDay,status,CalvingDay",
+    dim_max = 500, #threshold for DIM (remove what's above)
+    milk_max = 60, #threshold for milk yield (kg/d) (remove what's above)
     outdir = 'Analysis/2.filtering',
     force_overwrite = FALSE
   ))
@@ -62,13 +64,28 @@ cdata <- mutate(cdata, protein = ifelse(protein <= 0.5, NA, protein))
 cdata <- mutate(cdata, lactose = ifelse(lactose <= 0.5, NA, lactose))
 
 ## SELECTING COLUMNS
-# columns to 
+writeLines(" - removing unnecessary columns")
+# columns to drop
+print(paste(config$vars_to_drop, collapse = ", "))
 variables = strsplit(x = config$vars_to_drop, split = ",")[[1]]
 cdata <- cdata %>%
-  rename(BW = Body_weight) %>%
   select(-all_of(variables))
 
 ## DATA FILTERING
-filter(cdata, parity == 14)
+writeLines(" - filtering the data")
+filtered_data <- filter(cdata, DIM <= config$dim_max, milk <= config$milk_max)
+
+print(paste("N. of records in input file:", nrow(cdata)))
+print(paste("N. of records in filtered file:", nrow(filtered_data)))
+print(paste("N. of records removed with filtering:", nrow(cdata)-nrow(filtered_data)))
+
+## WRITING OUT CLEANED DATA
+writeLines(" - writing out cleaned and filtered data")
+dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE, showWarnings = FALSE)
+fname = file.path(config$base_folder, config$outdir, "filtered_data.csv")
+fwrite(x = filtered_data, file = fname, sep = ",", col.names = TRUE)
+print(paste("The filtered data file has been written out to:", fname))
+
+print("DONE!")
 
 
