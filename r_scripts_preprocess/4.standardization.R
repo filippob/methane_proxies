@@ -26,6 +26,7 @@ if (length(args) == 1){
 library("knitr")
 library("stringr")
 library("ggplot2")
+library("ggfortify")
 library("tidyverse")
 library("tidymodels")
 library("data.table")
@@ -63,7 +64,67 @@ sd_prot = sd(fdata$protein)
 sd_lact = sd(fdata$lactose)
 sd_dmi = sd(fdata$DMI)
 
-print("+ variable +-- avg --+-- std. dev. --+-")
-print(paste("parity ", round(avg_parity,3), round(sd_parity,3), sep=" | "))
-print(paste("DIM ", round(avg_dim, 3), round(sd_dim, 3), sep=" | "))
-print("+------------------------------------------+")
+vars = c("parity","DIM","BW", "milk", "fat", "protein", "lactose", "DMI")
+avgs = c(avg_parity,avg_dim,avg_bw,avg_milk,avg_fat,avg_prot,avg_lact,avg_dmi)
+sds = c(sd_parity,sd_dim,sd_bw,sd_milk,sd_fat,sd_prot,sd_lact,sd_dmi)
+
+print("Parameters used for standardization:")
+kable(data.frame("variable" = vars, "average" = round(avgs,3), "std. ddevs" = round(sds,3)))
+
+num_vars <- select(fdata, all_of(vars))
+header = names(num_vars)
+
+print("CENTERING")
+num_vars = sweep(as.matrix(num_vars), 2, avgs)
+
+print("SCALING")
+num_vars = (num_vars %*% diag(1/sds))
+num_vars = as.data.frame(num_vars)
+names(num_vars) <- header
+
+## PCA
+writeLines(" - PCA on the standardized numerical predictors")
+pca_res = prcomp(num_vars, center = FALSE, scale. = FALSE)
+
+dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE, showWarnings = FALSE)
+fname = file.path(config$base_folder, config$outdir, "pca.pdf")
+
+pdf(file = fname, width = 7, height = 7)
+autoplot(pca_res, data = fdata, colour = 'country')
+autoplot(pca_res, data = fdata, colour = 'Method')
+autoplot(pca_res, data = fdata, colour = 'RecordingYear')
+autoplot(pca_res, data = fdata, colour = 'herd')
+dev.off()
+
+#3. put together standardized data and categorical variables
+other_vars <- select(fdata, !all_of(vars))
+sdata = bind_cols(other_vars, num_vars)
+
+## STANDARDIZE CH4
+writeLines(" - standardizing CH4 emissions")
+avg = mean(sdata$CH4)
+std = sd(sdata$CH4)
+
+print("+-------------------------------------+")
+print("Parameters used for standardization:")
+print(paste("Average CH4:", round(avg, 3)))
+print(paste("Std deviation of CH4:", round(std, 3)))
+print("+-------------------------------------+")
+
+sdata$CH4 = (sdata$CH4-avg)/std
+
+print("write out histogram of standardized CH4 distribution")
+fname = file.path(config$base_folder, config$outdir, "std_ch4.png")
+png(filename = fname)
+hist(sdata$CH4)
+dev.off()
+
+
+## WRITING OUT IMPUTED DATA
+writeLines(" - writing out imputed data")
+sdata <- sdata %>% relocate(CH4, .after = DMI)
+fname = file.path(config$base_folder, config$outdir, "standardized_data.csv")
+fwrite(x = sdata, file = fname, sep = ",", col.names = TRUE)
+print(paste("The standardized data file has been written out to:", fname))
+
+print("DONE!")
