@@ -7,6 +7,7 @@ Combine new and old data on methane emissions and proxy data to develop robust p
 ## Workflow
 1. 1.combine_data.R --> combined_data.csv.gz
 2. 2.filter_data.R --> filtered_data.csv.gz
+3. 3.imputation.R --> imputed_data.csv.gz
 
 !! When running each step make sure to save the log in the corresponding output folder, e.g. Rscript <script_name.R> &> <folder>/log & !!
 !! After each step, you should compress the output, e.g. gzip <output_file> !!
