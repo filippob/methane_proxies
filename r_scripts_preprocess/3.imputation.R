@@ -40,8 +40,8 @@ print(paste(nrow(fdata),"have been read from the following file:", fname))
 missing_data = fdata
 
 ## subsample data
-n = 1000
-missing_data <- sample_n(fdata, n, replace = FALSE)
+# n = 1000
+# missing_data <- sample_n(fdata, n, replace = FALSE)
 
 ## convert all character variables to factors
 missing_data <- mutate(missing_data, across(where(is.character), as.factor))
