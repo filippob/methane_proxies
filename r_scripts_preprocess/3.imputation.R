@@ -55,6 +55,9 @@ imputation_recipe <- recipe(missing_data) %>%
 imputation_recipe_prep <- prep(imputation_recipe)
 imputed <- bake(imputation_recipe_prep, missing_data)
 
+## house cleaning
+rm(missing_data)
+
 ## alternative approach
 # temp <- select(missing_data, -CH4) ## remove outcome variable
 # imputation_recipe <- recipe(temp) %>% 
@@ -71,7 +74,7 @@ print(paste("N. of records in the impiuted data:", nrow(imputed)))
 writeLines(" - writing out imputed data")
 dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE, showWarnings = FALSE)
 fname = file.path(config$base_folder, config$outdir, "imputed_data.csv")
-fwrite(x = filtered_data, file = fname, sep = ",", col.names = TRUE)
+fwrite(x = imputed, file = fname, sep = ",", col.names = TRUE)
 print(paste("The imputed data file has been written out to:", fname))
 
 print("DONE!")
