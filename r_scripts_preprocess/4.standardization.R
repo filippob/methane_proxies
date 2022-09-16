@@ -89,11 +89,16 @@ pca_res = prcomp(num_vars, center = FALSE, scale. = FALSE)
 dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE, showWarnings = FALSE)
 fname = file.path(config$base_folder, config$outdir, "pca.pdf")
 
+## reduce datapoint density in the PCA plots
+n = nrow(fdata)/10
+vec <- sample(nrow(pca_res$x), n)
+pca_res$x <- pca_res$x[vec,]
+
 pdf(file = fname, width = 7, height = 7)
-autoplot(pca_res, data = fdata, colour = 'country')
-autoplot(pca_res, data = fdata, colour = 'Method')
-autoplot(pca_res, data = fdata, colour = 'RecordingYear')
-autoplot(pca_res, data = fdata, colour = 'herd')
+autoplot(pca_res, data = fdata[vec,], colour = 'country')
+autoplot(pca_res, data = fdata[vec,], colour = 'Method')
+autoplot(pca_res, data = fdata[vec,], colour = 'RecordingYear')
+autoplot(pca_res, data = fdata[vec,], colour = 'herd')
 dev.off()
 
 #3. put together standardized data and categorical variables
