@@ -19,8 +19,8 @@ if (length(args) == 1){
     test_prop = 0.8,
     ntrees = 100,
     nfolds = 5, #n. of folds for the internal cross-validation (model tuning)
-    nrepeates = 2, #n. of repetitions for the internal cross-validation (model tuning)
-    gridsize = 50, #n. of combinations of the tuning parameters to try
+    nrepeates = 1, #n. of repetitions for the internal cross-validation (model tuning)
+    gridsize = 25, #n. of combinations of the tuning parameters to try
     outdir = 'Analysis/random_forest',
     force_overwrite = FALSE
   ))
@@ -148,7 +148,7 @@ min_n_tune = select_best(rf_res, metric = "rmse") %>% pull("min_n")
 
 # the last model
 last_rf_mod <- 
-  rand_forest(mtry = mtry_tune, min_n = min_n_tune, trees = ntrees) %>% 
+  rand_forest(mtry = mtry_tune, min_n = min_n_tune, trees = config$ntrees) %>% 
   set_engine("ranger", num.threads = cores, importance = "impurity") %>% 
   set_mode("regression")
 
@@ -162,7 +162,8 @@ last_rf_fit <-
   last_rf_workflow %>% 
   last_fit(data_split)
 
-kable(last_rf_fit)
+print("last fit")
+last_rf_fit
 
 #### 8. Evaluate final model
 writeLines(" - evaluate the best model")
@@ -182,9 +183,9 @@ pearson = cor(preds$CH4, preds$.pred, method = "pearson")
 spearman = cor(preds$CH4, preds$.pred, method = "spearman")
 rmse = sqrt(sum((preds$.pred-preds$CH4)^2)/nrow(preds))
 
-print(paste("Pearson correlation on test data:", pearson))
-print(paste("Spearman correlation on test data:", spearman))
-print(paste("RMSE on test data:", rmse))
+print(paste("Pearson correlation on test data:", round(pearson,3)))
+print(paste("Spearman correlation on test data:", round(spearman,3)))
+print(paste("RMSE on test data:", round(rmse,3)))
 
 ## VARIABLE IMPORTANCE
 writeLines(" - extract variable importance")
