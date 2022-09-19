@@ -19,8 +19,8 @@ if (length(args) == 1){
     test_prop = 0.8,
     ntrees = 100,
     nfolds = 5, #n. of folds for the internal cross-validation (model tuning)
-    nrepeates = 3, #n. of repetitions for the internal cross-validation (model tuning)
-    gridsize = 40, #n. of combinations of the tuning parameters to try
+    nrepeates = 2, #n. of repetitions for the internal cross-validation (model tuning)
+    gridsize = 50, #n. of combinations of the tuning parameters to try
     outdir = 'Analysis/random_forest',
     force_overwrite = FALSE
   ))
@@ -28,6 +28,7 @@ if (length(args) == 1){
 }
 
 # SETUP -------------------------------------------------------------------
+library("vip")
 library("knitr")
 library("ggplot2")
 library("tidyverse")
@@ -41,10 +42,11 @@ sdata = fread(fname)
 print(paste(nrow(sdata),"have been read from the following file:", fname))
 
 inpdata = sdata
+dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE, showWarnings = FALSE)
 
 ## SUBSAMPLING
 ## subsample
-n = 5000
+n = 2000
 inpdata = sample_n(sdata, n)
 inpdata <- mutate(inpdata, across(where(is.character), as.factor))
 inpdata <- filter(inpdata, RecordingYear >= 2000)
@@ -113,3 +115,84 @@ rf_res <- rf_workflow %>%
             control = control_grid(save_pred = TRUE),
             metrics = metric_set(rmse,ccc))
 
+print("best models from hyperparameter tuning")
+rf_res %>% 
+  show_best('ccc')
+
+fname = file.path(config$base_folder, config$outdir, "model_tuning.pdf")
+pdf(file = fname, width = 7, height = 7)
+autoplot(rf_res)
+dev.off()
+
+#### 6. Select best model
+writeLines(" - select the best model")
+rf_best <- rf_res %>% 
+  select_best(metric = "rmse")
+
+print("best model hyperparameters")
+kable(rf_best)
+
+rf_ccc <- 
+  rf_res %>% 
+  collect_predictions(parameters = rf_best) %>% 
+  ccc(CH4, .pred) %>% 
+  mutate(model = "Random Forest")
+
+print("best model performance - corrleation")
+rf_ccc
+
+#### 7. Fit the last model
+writeLines(" - fit the best model")
+mtry_tune = select_best(rf_res, metric = "rmse") %>% pull("mtry")
+min_n_tune = select_best(rf_res, metric = "rmse") %>% pull("min_n")
+
+# the last model
+last_rf_mod <- 
+  rand_forest(mtry = mtry_tune, min_n = min_n_tune, trees = ntrees) %>% 
+  set_engine("ranger", num.threads = cores, importance = "impurity") %>% 
+  set_mode("regression")
+
+# the last workflow
+last_rf_workflow <- 
+  rf_workflow %>% 
+  update_model(last_rf_mod)
+
+# the last fit
+last_rf_fit <- 
+  last_rf_workflow %>% 
+  last_fit(data_split)
+
+kable(last_rf_fit)
+
+#### 8. Evaluate final model
+writeLines(" - evaluate the best model")
+last_rf_fit %>% 
+  collect_metrics() %>%
+  kable()
+
+print("First rows of predictions")
+preds <- last_rf_fit %>% collect_predictions()
+head(preds) %>% kable()
+
+g <- ggplot(preds, aes(x = .pred, y = CH4)) + geom_point()
+fname = file.path(config$base_folder, config$outdir, "predictions.pdf")
+ggsave(filename = fname, plot = g, device = "pdf")
+
+pearson = cor(preds$CH4, preds$.pred, method = "pearson")
+spearman = cor(preds$CH4, preds$.pred, method = "spearman")
+rmse = sqrt(sum((preds$.pred-preds$CH4)^2)/nrow(preds))
+
+print(paste("Pearson correlation on test data:", pearson))
+print(paste("Spearman correlation on test data:", spearman))
+print(paste("RMSE on test data:", rmse))
+
+## VARIABLE IMPORTANCE
+writeLines(" - extract variable importance")
+fname = file.path(config$base_folder, config$outdir, "variable_importance.pdf")
+pdf(file = fname, width = 7, height = 7)
+last_rf_fit %>% 
+  extract_fit_parsnip() %>% 
+  vip(num_features = 20)
+dev.off()
+
+print("DONE!")
