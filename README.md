@@ -10,5 +10,8 @@ Combine new and old data on methane emissions and proxy data to develop robust p
 3. 3.imputation.R --> imputed_data.csv.gz
 4. 4.standardization.R --> standardized_data.csv.gz
 
+*Models*
+- Random Forest: random_forest.r
+
 !! When running each step make sure to save the log in the corresponding output folder, e.g. Rscript <script_name.R> &> <folder>/log & !!
 !! After each step, you should compress the output, e.g. gzip <output_file> !!
