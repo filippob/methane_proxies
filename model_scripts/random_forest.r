@@ -217,7 +217,7 @@ ergebnisse <- rbind(ergebnisse, data.frame(
   "test_spearman"=spearman,
   "test_rmse"=rmse,
   "ccc_cv"=ccc_cv,
-  "currentDate"= as.numeric(Sys.time())
+  "currentDate"= round(as.numeric(Sys.time()),0)
 ))
 
 ## writing out results to 'results.csv'
