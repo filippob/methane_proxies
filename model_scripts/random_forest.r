@@ -22,6 +22,8 @@ if (length(args) == 1){
     nrepeates = 1, #n. of repetitions for the internal cross-validation (model tuning)
     gridsize = 25, #n. of combinations of the tuning parameters to try
     outdir = 'Analysis/random_forest',
+    model = "random_forest",
+    cv_type = "random_stratified",
     force_overwrite = FALSE
   ))
   
@@ -140,6 +142,7 @@ rf_ccc <-
 
 print("best model performance - corrleation")
 rf_ccc
+ccc_cv = rf_ccc %>% pull(".estimate")
 
 #### 7. Fit the last model
 writeLines(" - fit the best model")
@@ -195,5 +198,35 @@ last_rf_fit %>%
   extract_fit_parsnip() %>% 
   vip(num_features = 20)
 dev.off()
+
+## WRITE OUT RESULTS
+ergebnisse = NULL
+ergebnisse <- rbind(ergebnisse, data.frame(
+  "model"=config$model,
+  "cv_type"=config$cv_type,
+  "sample_size"=nrow(inpdata),
+  "training_size"=nrow(train_data),
+  "test_proportion"=config$test_prop,
+  "n_trees"=config$ntrees,
+  "nfolds"=config$nfolds,
+  "nrepeates"=config$nrepeates,
+  "grid_size"=config$gridsize,
+  "mtry"=mtry_tune,
+  "min_num_nodes"=min_n_tune,
+  "test_pearson"=pearson,
+  "test_spearman"=spearman,
+  "test_rmse"=rmse,
+  "ccc_cv"=ccc_cv,
+  "currentDate"= as.numeric(Sys.time())
+))
+
+## writing out results to 'results.csv'
+print("Writing out results to results.csv")
+
+fname = file.path(config$base_folder, config$outdir, "results.csv")
+if(!file.exists(fname)){
+  write.table(ergebnisse,fname,col.names = TRUE,row.names = FALSE, sep=",")
+} else write.table(ergebnisse,fname,append=TRUE,sep=",",col.names = FALSE,row.names = FALSE)
+
 
 print("DONE!")
