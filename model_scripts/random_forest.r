@@ -18,6 +18,9 @@ if (length(args) == 1){
     input_data = 'Analysis/4.standardization/standardized_data.csv.gz',
     test_prop = 0.8,
     ntrees = 100,
+    nfolds = 5, #n. of folds for the internal cross-validation (model tuning)
+    nrepeates = 3, #n. of repetitions for the internal cross-validation (model tuning)
+    gridsize = 40, #n. of combinations of the tuning parameters to try
     outdir = 'Analysis/random_forest',
     force_overwrite = FALSE
   ))
@@ -81,6 +84,7 @@ rf_recipe <-
   step_rm(removals = "time_space")
 
 #### 2. Specify the model
+writeLines(" - specifying the random forest model")
 cores <- parallel::detectCores()
 
 rf_mod <- 
@@ -88,8 +92,24 @@ rf_mod <-
   set_engine("ranger", num.threads = cores) %>% 
   set_mode("regression")
 
+print(paste("N. of cores detected: ", cores))
+
 #### 3. Create the workflow
+writeLines(" - creating the tidymodels workflow")
 rf_workflow <- 
   workflow() %>% 
   add_model(rf_mod) %>% 
   add_recipe(rf_recipe)
+
+#### 4. Make (cross)validation splits
+writeLines(" - making the partitions for model tuning")
+folds <- vfold_cv(train_data, v = config$nfolds, repeats = config$nrepeates)
+
+#### 5. Tuning the hyperparameters
+writeLines(" - hyperparameter tuning")
+rf_res <- rf_workflow %>% 
+  tune_grid(folds,
+            grid = config$gridsize,
+            control = control_grid(save_pred = TRUE),
+            metrics = metric_set(rmse,ccc))
+
