@@ -79,7 +79,7 @@ findata <- findata %>%
          cow = as.character(cow)) %>% 
   select(-c(Inst, yrmonwk, calvdate, ecm, scc, lactwk))
 
-# 1. Spain
+# 2. Spain
 writeLines(" - SPAIN")
 ## features
 fname = file.path(config$base_folder, config$new_data_folder, ffs[2]) 
