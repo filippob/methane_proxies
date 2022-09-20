@@ -19,6 +19,7 @@ if (length(args) == 1){
     vars_to_drop = "RecordingDay,status,CalvingDay",
     dim_max = 500, #threshold for DIM (remove what's above)
     milk_max = 60, #threshold for milk yield (kg/d) (remove what's above)
+    year_min = 2000, #threshold for records to keep based on Recording Year
     outdir = 'Analysis/2.filtering',
     force_overwrite = FALSE
   ))
@@ -63,6 +64,9 @@ cdata <- mutate(cdata, protein = ifelse(protein <= 0.5, NA, protein))
 #7. set lactose < 0.5 to NA
 cdata <- mutate(cdata, lactose = ifelse(lactose <= 0.5, NA, lactose))
 
+#8. create cow ID
+cdata <- mutate(cdata, cow = paste(herd, cow, sep = "_"))
+
 ## SELECTING COLUMNS
 writeLines(" - removing unnecessary columns")
 # columns to drop
@@ -73,7 +77,7 @@ cdata <- cdata %>%
 
 ## DATA FILTERING
 writeLines(" - filtering the data")
-filtered_data <- filter(cdata, DIM <= config$dim_max, milk <= config$milk_max)
+filtered_data <- filter(cdata, DIM <= config$dim_max, milk <= config$milk_max, RecordingYear >= config$year_min)
 
 print(paste("N. of records in input file:", nrow(cdata)))
 print(paste("N. of records in filtered file:", nrow(filtered_data)))
