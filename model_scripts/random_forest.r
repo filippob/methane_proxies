@@ -50,8 +50,9 @@ dir.create(file.path(config$base_folder, config$outdir), recursive = TRUE, showW
 ## subsample
 n = 2000
 inpdata = sample_n(sdata, n)
+
 inpdata <- mutate(inpdata, across(where(is.character), as.factor))
-inpdata <- filter(inpdata, RecordingYear >= 2000)
+inpdata <- filter(inpdata, RecordingYear >= 2000) ## recheck if necessary (maybe already done in the cleaning and filtering step)
 rm(sdata)
 
 ## PREPROCESSING
