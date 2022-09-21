@@ -115,13 +115,14 @@ rf_res <- rf_workflow %>%
   tune_grid(folds,
             grid = config$gridsize,
             control = control_grid(save_pred = TRUE),
-            metrics = metric_set(rmse,ccc))
+            metrics = metric_set(yardstick::rmse,ccc))
 
 print("best models from hyperparameter tuning")
 rf_res %>% 
   show_best('ccc')
 
-fname = file.path(config$base_folder, config$outdir, "model_tuning.pdf")
+naam = paste(config$model, config$cv_type, config$gridsize, nrow(inpdata), sep = "_")
+fname = file.path(config$base_folder, config$outdir, paste("model_tuning_",naam,".pdf",sep=""))
 pdf(file = fname, width = 7, height = 7)
 autoplot(rf_res)
 dev.off()
@@ -179,7 +180,8 @@ preds <- last_rf_fit %>% collect_predictions()
 head(preds) %>% kable()
 
 g <- ggplot(preds, aes(x = .pred, y = CH4)) + geom_point()
-fname = file.path(config$base_folder, config$outdir, "predictions.pdf")
+naam = paste(config$model, config$cv_type, config$gridsize, nrow(inpdata), sep = "_")
+fname = file.path(config$base_folder, config$outdir, paste("predictions_",naam,".pdf",sep=""))
 ggsave(filename = fname, plot = g, device = "pdf")
 
 pearson = cor(preds$CH4, preds$.pred, method = "pearson")
@@ -192,12 +194,26 @@ print(paste("RMSE on test data:", round(rmse,3)))
 
 ## VARIABLE IMPORTANCE
 writeLines(" - extract variable importance")
-fname = file.path(config$base_folder, config$outdir, "variable_importance.pdf")
+naam = paste(config$model, config$cv_type, config$gridsize, nrow(inpdata), sep = "_")
+fname = file.path(config$base_folder, config$outdir, paste("variable_importance_",naam,".pdf",sep=""))
 pdf(file = fname, width = 7, height = 7)
 last_rf_fit %>% 
   extract_fit_parsnip() %>% 
-  vip(num_features = 20)
+  vip(num_features = 20, include_type = TRUE)
 dev.off()
+
+varimp <- last_rf_fit %>% 
+  extract_fit_parsnip() %>% 
+  vi(scale=TRUE) %>%
+  mutate(experiment = paste(config$model, config$cv_type, config$gridsize, mtry_tune, min_n_tune, nrow(inpdata), sep = "_"))
+
+## writing out results to 'results.csv'
+print("Writing out variable importance to varimp.csv")
+
+fname = file.path(config$base_folder, config$outdir, "varimp.csv")
+if(!file.exists(fname)){
+  write.table(varimp,fname,col.names = TRUE,row.names = FALSE, sep=",")
+} else write.table(varimp,fname,append=TRUE,sep=",",col.names = FALSE,row.names = FALSE)
 
 ## WRITE OUT RESULTS
 ergebnisse = NULL
