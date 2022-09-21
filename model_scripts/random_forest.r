@@ -206,7 +206,8 @@ dev.off()
 varimp <- last_rf_fit %>% 
   extract_fit_parsnip() %>% 
   vi(scale=TRUE) %>%
-  mutate(experiment = paste(config$model, config$cv_type, config$gridsize, mtry_tune, min_n_tune, nrow(inpdata), sep = "_"))
+  mutate(experiment = paste(config$model, config$cv_type, config$gridsize, mtry_tune, min_n_tune, nrow(inpdata), sep = "_"),
+         currdate = round(as.numeric(Sys.time()),0))
 
 ## writing out results to 'results.csv'
 print("Writing out variable importance to varimp.csv")
