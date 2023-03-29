@@ -57,7 +57,7 @@ print(paste("The following files have been found", paste(ffs, collapse = ", ")))
 
 # 1. Finland
 writeLines(" - FINLAND")
-fname = file.path(config$base_folder, config$new_data_folder, ffs[4]) 
+fname = file.path(config$base_folder, config$new_data_folder, ffs[1]) 
 findata = fread(fname)
 print(paste("The folowing new dataset has been read", fname))
 
@@ -79,21 +79,64 @@ findata <- findata %>%
          cow = as.character(cow)) %>% 
   select(-c(Inst, yrmonwk, calvdate, ecm, scc, lactwk))
 
-# 2. Spain
-writeLines(" - SPAIN")
+# 2. Spain - INIA
+writeLines(" - SPAIN-INIA")
 ## features
-fname = file.path(config$base_folder, config$new_data_folder, ffs[2]) 
+fname = file.path(config$base_folder, config$new_data_folder, ffs[5]) 
 spaindata = fread(fname)
 print(paste("The folowing new dataset has been read", fname))
 
-## methane emissions
-fname = file.path(config$base_folder, config$new_data_folder, ffs[3]) 
-spainch4 = fread(fname)
+spaindata <- spaindata |>
+  rename(cow = ANIMAL.ID, country = COUNTRY.OF.DATA.ORIGIN, herd = HERD.CODE, DMI = DRY.MATTER.INTAKE.GRAMS.PER.DAY, Body_weight = LIVE.BODY.WEIGHT,
+         CH4 = CH4.EMISSION.GDAY, Method = CH4.MEASURE.METHOD, parity = `LACTATION NUMBER`, milk = MILK.YIELD, protein = PROTEIN.YIELD,
+         fat = FAT.YIELD, lactose = LACTOSE.YIELD) |>
+  filter(!is.na(CH4)) |>
+  mutate(FECHA = as.Date(FECHA, "%Y-%m-%d"), 
+         RecordingYear = as.integer(format(FECHA, format = "%Y")),
+         RecordingMonth = as.integer(format(FECHA, format = "%m")),
+         RecordingDay = as.integer(format(FECHA, format = "%d")),
+         status = ifelse(DIM >= 1, "Lactating", "Dry"),
+         breed = "Holstein", ## sum(grepl(pattern = "HOL", x = spaindata$ANIMAL.ID)) == nrow(spaindata) !! ALL ANIMALS FROM THIS DATASET ARE HOLSTEINS !!
+         CalvingYear = NA,
+         CalvingMonth = NA,
+         CalvingDay = NA,
+         country = "Spain",
+         Body_weight = as.numeric(gsub(",","\\.",Body_weight))
+         ) |>
+  select(-FECHA)
+  
+# 3. Spain - NEIKER
+writeLines(" - SPAIN-NEIKER")
+## features
+fname = file.path(config$base_folder, config$new_data_folder, ffs[2]) 
+neiker = readxl::read_xlsx(fname, skip = 5)
 print(paste("The folowing new dataset has been read", fname))
+
+neiker <- neiker |>
+  rename(institute = `Abbr. Institute`, id = `Animal ID`, herd = Herd, breed = Breed, CH4 = `CH4(gm/d)`,
+         Method = `CH4 method`, DMI = `DMintake(kg/d)`, milk = `Milk(kg/d)`, protein = `Prot%`, fat = `Fat%`,
+         lactose = Lactose, parity = Parity, Body_weight = `Bodywt(kg)`, 
+         RecDate = `Recording date (ddmmyyyy)`, CalvDate = `Calving date(ddmmyyyy)`)  |>
+  mutate(cow = paste("Neiker",institute,id,sep="_"), country = "Spain",
+         status = ifelse(DIM >= 1, "Lactating", "Dry"),
+         RecordingYear = RecDate %% 10000,
+         RecordingMonth = as.integer(gsub("2019|2020","",RecDate)) %% 100,
+         RecordingDay = as.integer(substr(RecDate, 1, nchar(RecDate)-6)),
+         CalvingYear = CalvDate %% 10000,
+         CalvingMonth = as.integer(gsub("2018|2019|2020","",CalvDate)) %% 100,
+         CalvingDay = as.integer(substr(CalvDate, 1, nchar(CalvDate)-6))
+         ) |>
+  mutate(across(where(is.numeric), .fns = ~replace(., . <= -99, NA))) |>
+  select(-c(institute, id, SCC, `Age(month)`, RecDate, CalvDate))
+
+
+## COMBINE NEW DATA
+new_data <- bind_rows(findata, spaindata, neiker)
+new_data %>% group_by(country, herd) %>% summarise(n()) %>% kable()
 
 ## COMBINE THE DATA
 writeLines(" - combining old and new data records")
-combined_data <- old_data %>% bind_rows(findata)
+combined_data <- old_data %>% bind_rows(new_data)
 
 ## CREATE OUTPUT FOLDER AND WRITE OUT COMBINED DATA
 writeLines(" - writing out the combined file")
