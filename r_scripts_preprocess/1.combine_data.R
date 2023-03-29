@@ -86,6 +86,7 @@ fname = file.path(config$base_folder, config$new_data_folder, ffs[5])
 spaindata = fread(fname)
 print(paste("The folowing new dataset has been read", fname))
 
+### milk fat and protein appear to be expressed in GRAMS
 spaindata <- spaindata |>
   rename(cow = ANIMAL.ID, country = COUNTRY.OF.DATA.ORIGIN, herd = HERD.CODE, DMI = DRY.MATTER.INTAKE.GRAMS.PER.DAY, Body_weight = LIVE.BODY.WEIGHT,
          CH4 = CH4.EMISSION.GDAY, Method = CH4.MEASURE.METHOD, parity = `LACTATION NUMBER`, milk = MILK.YIELD, protein = PROTEIN.YIELD,
@@ -101,10 +102,17 @@ spaindata <- spaindata |>
          CalvingMonth = NA,
          CalvingDay = NA,
          country = "Spain",
-         Body_weight = as.numeric(gsub(",","\\.",Body_weight))
+         Body_weight = as.numeric(gsub(",","\\.",Body_weight)),
+         milk = milk/1000, 
+         fat = 100*((fat/1000)/milk), 
+         protein = 100*((protein/1000)/milk)
          ) |>
   select(-FECHA)
-  
+
+
+spaindata |>
+  mutate()
+
 # 3. Spain - NEIKER
 writeLines(" - SPAIN-NEIKER")
 ## features
